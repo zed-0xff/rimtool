@@ -1,0 +1,7 @@
+*.dll
+*.deps.json
+*.pdb
+
+Assemblies
+bin
+obj

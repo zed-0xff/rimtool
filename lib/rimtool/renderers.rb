@@ -56,6 +56,15 @@ module RimTool
       end
     end
 
+    def list(contents, list_type)
+      case list_type
+      when :ordered
+        "[olist]\n#{contents}[/olist]\n"
+      else
+        "[list]\n#{contents}[/list]\n"
+      end + "\n"
+    end
+
     def paragraph(text)
       text + "\n\n"
     end

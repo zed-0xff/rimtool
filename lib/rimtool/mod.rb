@@ -75,6 +75,27 @@ module RimTool
       "[%s](%s)" % [name, steam_url]
     end
 
+    # iterate over mod files, respecting .rimignore, if any
+    def each_file dir=path, ignores = Set.new([".", ".."]), &block
+      rimignore_fname = File.join(dir, ".rimignore")
+      if File.exist?(rimignore_fname)
+        ignores = ignores.dup + Set.new(File.readlines(rimignore_fname).map{ |line| line[0] == "#" ? "" : line.strip }.uniq).delete("")
+      end
+
+      globs = ignores.find_all{ |i| i[/[?*]/] }
+      Dir.foreach(dir).to_a
+        .delete_if{ |fn| ignores.include?(fn) }
+        .delete_if{ |fn| globs.any?{ |g| File.fnmatch(g, fn, File::FNM_DOTMATCH) } }
+        .each do |fn|
+          pathname = File.join(dir, fn)
+          if File.directory?(pathname)
+            each_file(pathname, ignores, &block)
+          else
+            yield pathname
+          end
+        end
+    end
+
     def self.each(&block)
       e = Enumerator.new do |y|
         seen = Set.new

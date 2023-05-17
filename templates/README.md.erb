@@ -9,7 +9,7 @@ FIXME: blah blah
 
 ## You may also like...
 
-<%= RimTool::Mod.find_all{ |m| m.author == mod.author && m.steam_id && m.steam_id != mod.steam_id }.shuffle.pop(3).map(&:steam_img_link).join(" ") %>
+<%= RimTool::Mod.find_all{ |m| m.author == mod.author && m.steam_id && m.steam_id != mod.steam_id }.shuffle.pop(3).map(&:steam_img_link).join("\n") %>
 
 <%= mod.github_url %>
 
