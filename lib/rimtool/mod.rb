@@ -6,17 +6,29 @@ require "json"
 
 module RimTool
   class Mod
-    attr_reader :name, :package_id, :id
+    attr_reader :path, :name, :package_id, :author, :url, :id
 
     def initialize(path, xml = nil)
       @path = path
       @xml = xml || Nokogiri::XML(open(File.join(path, "About", "About.xml")))
       @name = (@xml/:ModMetaData/:name).first&.text
+      @author = (@xml/:ModMetaData/:author).first&.text
+      @url = (@xml/:ModMetaData/:url).first&.text
       @package_id = (@xml/:ModMetaData/:packageId).first&.text
       pub_fname = File.join(path, "About", "PublishedFileId.txt")
       if File.exist?(pub_fname)
         @id = File.read(pub_fname).strip.to_i
       end
+    end
+
+    def github_url
+      url = (@xml/:ModMetaData/:url).first&.text
+      return url if url.start_with?("https://github.com/")
+      nil
+    end
+
+    def steam_id
+      id
     end
 
     def inspect
@@ -27,34 +39,77 @@ module RimTool
       "https://steamcommunity.com/sharedfiles/filedetails/?id=#@id"
     end
 
+    # nice tool: https://steamapi.xpaw.me/
     # curl 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/' -X 'POST' --data 'key=XXX&itemcount=1&publishedfileids%5B0%5D=2961708299'
     def steam_details
       return nil unless CONFIG['steam_web_api_key']
 
-      uri = URI("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/")
-      req = Net::HTTP.post_form(uri, key: CONFIG['steam_web_api_key'], itemcount: 1, "publishedfileids[0]" => id)
-      r = JSON.parse(req.body)
-      r.dig('response', 'publishedfiledetails', 0) || r
+      @steam_details ||=
+        begin
+          uri = URI("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/")
+          req = Net::HTTP.post_form(uri, key: CONFIG['steam_web_api_key'], itemcount: 1, "publishedfileids[0]" => id)
+          r = JSON.parse(req.body)
+          r.dig('response', 'publishedfiledetails', 0) || r
+        end
     end
 
     def steam_img_url
+      if steam_details
+        return steam_details['preview_url'] + "?imw=268&imh=151&ima=fit&impolicy=Letterbox"
+      end
+
       doc = Nokogiri::HTML(URI.open(steam_url))
       img = (doc/"img#previewImageMain")
       return img.attr("src").value if img.any?
+
       img = (doc/"img#previewImage")
       return img.attr("src").value.sub(/imw=\d+/, "imw=268").sub(/imh=\d+/, "imh=151") if img.any?
       nil
     end
 
     def steam_img_link
-      "[![](%s)](%s)" % [steam_img_url, steam_url]
+      "[![%s](%s)](%s)" % [name, steam_img_url, steam_url]
     end
 
     def steam_link
       "[%s](%s)" % [name, steam_url]
     end
 
-    def self.find id
+    def self.each(&block)
+      e = Enumerator.new do |y|
+        seen = Set.new
+        MOD_DIRS.each do |dirname|
+          Dir.each_child(dirname) do |fn|
+            mod_dir = File.join(dirname, fn)
+            next unless File.exist?(File.join(mod_dir, "About", "About.xml"))
+
+            mod = Mod.new(mod_dir)
+            next if mod.id && seen.include?(mod.id)
+
+            y << mod
+          end
+        end
+        nil
+      end
+      block_given? ? e.each(&block) : e
+    end
+
+    def self.find_all &block
+      each.find_all(&block)
+    end
+
+    def self.find id=nil, &block
+      if block_given?
+        each do |mod|
+          return mod if block.call(mod)
+        end
+        return nil
+      end
+      
+      return nil unless id
+
+      id = id.to_s
+
       if id == "."
         return Mod.new(".")
       end

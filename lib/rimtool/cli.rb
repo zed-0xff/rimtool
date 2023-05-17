@@ -15,6 +15,9 @@ module RimTool
         mod = RimTool::Mod.find(argv[1])
         return unless mod
 
+        shortpath = mod.path
+        printf "%-14s %s\n", "path", shortpath
+
         keys = [:id, :name, :package_id, nil, :steam_url, :steam_link]
         keys.each do |key|
           unless key
@@ -24,7 +27,7 @@ module RimTool
           printf "%-14s %s\n", key, mod.send(key)
         end
         puts
-#        puts "steam_img_link " + mod.steam_img_link
+        puts "steam_img_link " + mod.steam_img_link
         if (d = mod.steam_details)
           ap d
         end

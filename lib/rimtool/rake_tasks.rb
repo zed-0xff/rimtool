@@ -19,7 +19,14 @@ desc "check for any pesky stuff"
 task :check do
   unless File.exist?(".rimignore")
     puts "[!] no .rimignore".yellow
+    needfix = true
   end
+  unless File.exist?("README.md")
+    puts "[!] no README.md".yellow
+    needfix = true
+  end
+  puts "run 'rake fix' to add missing files" if needfix
+
   if Dir.exist?("Assemblies")
     Dir["Assemblies/*"].each do |fname|
       if File.directory?(fname)
@@ -48,6 +55,12 @@ task :check do
       puts %Q|    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">\n      <DebugType>None</DebugType>\n    </PropertyGroup>|
     end
   end
+end
+
+desc "autofix found issues"
+task :fix do
+  RimTool.add_template_file("README.md")
+  RimTool.add_template_file(".rimignore")
 end
 
 desc "build Release"
@@ -97,10 +110,10 @@ namespace :readme do
   task :steam do
     puts Redcarpet::Markdown
       .new(RimTool::SteamRenderer, fenced_code_blocks: true, lax_spacing: false)
-      .render(File.read("README.md")).strip.gsub("\n\n\n", "\n\n")
-
-    git_url = "https://github.com/" + `git remote -v`.scan(/git@github\.com:(.+)\.git/).flatten.first
-    puts "[url=#{git_url}]github[/url]"
+      .render(File.read("README.md"))
+      .strip
+      .gsub("\n\n\n", "\n\n")
+      .gsub("[/img][/url]\n[url", "[/img][/url] [url") # make "You may also like" images block horizontal
   end
 end
 

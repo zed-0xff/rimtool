@@ -1,0 +1,18 @@
+# <%= mod.name %>
+[![<%= mod.name %>](About/Preview.png)](<%= mod.steam_url %>)
+
+FIXME: blah blah
+
+## Verified compatible/supported mods
+
+- [FIXME](https://steamcommunity.com/sharedfiles/filedetails/?id=...)
+
+## You may also like...
+
+<%= RimTool::Mod.find_all{ |m| m.author == mod.author && m.steam_id && m.steam_id != mod.steam_id }.shuffle.pop(3).map(&:steam_img_link).join(" ") %>
+
+<%= mod.github_url %>
+
+## Support me
+
+[![ko-fi](https://i.imgur.com/Utx6OIH.png)](https://ko-fi.com/K3K81Z3W5) or [Patreon](https://www.patreon.com/zed_0xff)
