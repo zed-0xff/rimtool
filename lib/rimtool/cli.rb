@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "awesome_print"
 
 module RimTool
   class CLI
@@ -23,7 +24,10 @@ module RimTool
           printf "%-14s %s\n", key, mod.send(key)
         end
         puts
-        puts "steam_img_link " + mod.steam_img_link
+#        puts "steam_img_link " + mod.steam_img_link
+        if (d = mod.steam_details)
+          ap d
+        end
       when 'modlink'
         mod = RimTool::Mod.find(argv[1])
         if mod

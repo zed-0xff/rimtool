@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 require "nokogiri"
 require "open-uri"
+require "net/http"
+require "json"
 
 module RimTool
   class Mod
@@ -23,6 +25,16 @@ module RimTool
 
     def steam_url
       "https://steamcommunity.com/sharedfiles/filedetails/?id=#@id"
+    end
+
+    # curl 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/' -X 'POST' --data 'key=XXX&itemcount=1&publishedfileids%5B0%5D=2961708299'
+    def steam_details
+      return nil unless CONFIG['steam_web_api_key']
+
+      uri = URI("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/")
+      req = Net::HTTP.post_form(uri, key: CONFIG['steam_web_api_key'], itemcount: 1, "publishedfileids[0]" => id)
+      r = JSON.parse(req.body)
+      r.dig('response', 'publishedfiledetails', 0) || r
     end
 
     def steam_img_url

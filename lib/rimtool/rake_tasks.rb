@@ -2,6 +2,7 @@
 require_relative "../rimtool"
 require_relative "../rimtool/renderers"
 
+require 'awesome_print'
 require 'fileutils'
 
 desc "list files that will be uploaded, respecting .rimignore files, if any"
@@ -9,10 +10,45 @@ task :ls do
   printf "[=] %5d KB\n", RimTool.list_dir(".")/1024
 end
 
-task :mod => :release
+task :mod => :build
 
 task default: [:build]
-task release: [:prune, :build, :test, :clean, :ls]
+task release: [:prune, :build, :test, :clean, :ls, :check]
+
+desc "check for any pesky stuff"
+task :check do
+  unless File.exist?(".rimignore")
+    puts "[!] no .rimignore".yellow
+  end
+  if Dir.exist?("Assemblies")
+    Dir["Assemblies/*"].each do |fname|
+      if File.directory?(fname)
+        puts "[!] dir #{fname} is present".red
+        puts "add to csproj/PropertyGroup:"
+        puts "    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>"
+        puts "    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>"
+        exit 1
+      end
+    end
+    if File.exist?("Assemblies/0Harmony.dll")
+      puts "[!] Assemblies/0Harmony.dll is present".red
+      puts "add ExcludeAssets:"
+      puts '    <PackageReference Include="Lib.Harmony" Version="2.2.2" ExcludeAssets="runtime" />'
+      exit 1
+    end
+    if Dir["Assemblies/*.dll"].size > 1
+      puts "[!] too many DLLs in Assemblies".red
+      puts "add to csproj/Reference/*:"
+      puts "    <Private>False</Private>"
+      exit 1
+    end
+    if Dir["Assemblies/*.pdb"].size > 0
+      puts "[!] PDB files present".red
+      puts "add to csproj:"
+      puts %Q|    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">\n      <DebugType>None</DebugType>\n    </PropertyGroup>|
+    end
+  end
+end
 
 desc "build Release"
 task :build do

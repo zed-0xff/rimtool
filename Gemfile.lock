@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     rimtool (0.1.0)
+      awesome_print
       md_to_bbcode
       nokogiri
 
@@ -9,6 +10,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
+    awesome_print (1.9.2)
     diff-lcs (1.5.0)
     json (2.6.3)
     md_to_bbcode (2.0.0)
