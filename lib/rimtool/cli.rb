@@ -36,6 +36,9 @@ module RimTool
         if mod
           printf "[%s](%s)\n", mod.name, mod.steam_url
         end
+      when 'yada'
+        mod = RimTool::Mod.find(argv[1])
+        pp mod.yada_details
       end
     end
   end

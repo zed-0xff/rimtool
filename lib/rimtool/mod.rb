@@ -20,6 +20,10 @@ module RimTool
         @id = File.read(pub_fname).strip.to_i
       end
     end
+    
+    def readme
+      @readme ||= Readme.new(File.read(File.join(path, "README.md")), self)
+    end
 
     def github_url
       url = (@xml/:ModMetaData/:url).first&.text
@@ -37,6 +41,10 @@ module RimTool
 
     def steam_url
       "https://steamcommunity.com/sharedfiles/filedetails/?id=#@id"
+    end
+
+    def yada_details
+      @yada_details ||= YADA.query_ugc_details(id).dig("Results", "li")
     end
 
     # nice tool: https://steamapi.xpaw.me/

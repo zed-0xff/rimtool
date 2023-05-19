@@ -29,5 +29,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "awesome_print"
   spec.add_dependency "nokogiri"
+  spec.add_dependency "nori"
   spec.add_dependency "md_to_bbcode"
 end

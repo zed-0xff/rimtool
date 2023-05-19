@@ -42,3 +42,6 @@ module RimTool
 end
 
 require_relative "rimtool/mod"
+require_relative "rimtool/mod/readme"
+require_relative "rimtool/renderers"
+require_relative "rimtool/yada"

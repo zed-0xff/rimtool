@@ -5,6 +5,7 @@ PATH
       awesome_print
       md_to_bbcode
       nokogiri
+      nori
 
 GEM
   remote: https://rubygems.org/
@@ -17,6 +18,7 @@ GEM
       redcarpet (~> 3.5)
     nokogiri (1.15.0-arm64-darwin)
       racc (~> 1.4)
+    nori (2.6.0)
     parallel (1.23.0)
     parser (3.2.2.1)
       ast (~> 2.4.1)

@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 require_relative "../rimtool"
-require_relative "../rimtool/renderers"
 
 require 'awesome_print'
 require 'fileutils'
 
+include RimTool
+
 desc "list files that will be uploaded, respecting .rimignore files, if any"
 task :ls do
   totalsize = 0
-  RimTool::Mod.new(".").each_file do |fname|
+  Mod.new(".").each_file do |fname|
     fsize = File.size(fname)
     printf "[.] %5d KB  %s\n", fsize/1024, fname
     totalsize += fsize
@@ -24,7 +25,7 @@ task release: [:prune, :build, :test, :clean, :ls, :check]
 desc "check for any pesky stuff"
 task :check do
   # 'rake fix' will need mod.url, so running it before others
-  mod = RimTool::Mod.new(".")
+  mod = Mod.new(".")
   unless mod.url
     puts "[!] no mod url in About/About.xml".red
     exit 1
@@ -128,20 +129,13 @@ namespace :readme do
   desc "render README as bbcode"
   task :bb do
     puts Redcarpet::Markdown
-      .new(RimTool::ForumRenderer, fenced_code_blocks: true, lax_spacing: false)
+      .new(ForumRenderer, fenced_code_blocks: true, lax_spacing: false)
       .render(File.read("README.md"))
   end
 
   desc "render README for steam"
   task :steam do
-    puts Redcarpet::Markdown
-      .new(RimTool::SteamRenderer, fenced_code_blocks: true, lax_spacing: false)
-      .render(File.read("README.md"))
-      .strip
-      .gsub("\n\n\n", "\n\n")
-      .gsub("[/img][/url]\n[url", "[/img][/url] [url") # make "You may also like" images block horizontal
-      .gsub("\n\n[olist]", "\n[olist]")                # lists have too big default upper margin# 
-      .gsub("\n\n[list]",  "\n[list]")
+    puts Mod.new(".").readme.to_steam
   end
 
   desc "fix img links to other mods"
@@ -150,7 +144,7 @@ namespace :readme do
     d1 = d0.dup
     d0.scan(%r_^\[!\[(.+?)\]\((https://steamuserimages.+?)\)\]\(https://steamcommunity\.com/sharedfiles/filedetails/\?id=(\d+)?\)$_)
       .each do |mod_name, mod_img_url, mod_id|
-        mod = RimTool::Mod.find(mod_id)
+        mod = Mod.find(mod_id)
         if mod.steam_img_url != mod_img_url
           puts "[*] updated #{mod_name.inspect} link"
           d1.gsub!(mod_img_url, mod.steam_img_url)
