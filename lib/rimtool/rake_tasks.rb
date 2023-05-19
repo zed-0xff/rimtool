@@ -162,5 +162,17 @@ namespace :readme do
       File.write "README.md", d1
     end
   end
+
+  desc 'add "You may also like..." section to README.md'
+  task :promote do
+    mod = Mod.new(".")
+    data = File.read "README.md"
+    raise "already promoting" if data["# You may also like"]
+
+    data.strip!
+    data << "\n\n## You may also like...\n\n"
+    data << RimTool::Mod.find_all{ |m| m.author == mod.author && m.steam_id && m.steam_id != mod.steam_id }.shuffle.pop(3).map(&:steam_img_link).join("\n")
+    File.write "README.md", data
+  end
 end
 
