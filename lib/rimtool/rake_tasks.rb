@@ -138,6 +138,14 @@ namespace :readme do
     puts Mod.new(".").readme.to_steam
   end
 
+  namespace :steam do
+    desc "push README to steam"
+    task :push do
+      mod = Mod.new(".")
+      YADA.update_item_description!(mod)
+    end
+  end
+
   desc "fix img links to other mods"
   task :fix_links do
     d0 = File.read("README.md")
