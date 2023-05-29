@@ -125,6 +125,14 @@ task :test do
   end
 end
 
+namespace :preview do
+  desc "push preview image to steam"
+  task :push do
+    mod = Mod.new(".")
+    YADA.update_item_preview!(mod)
+  end
+end
+
 namespace :readme do
   desc "render README as bbcode"
   task :bb do
@@ -136,6 +144,23 @@ namespace :readme do
   desc "render README for steam"
   task :steam do
     puts Mod.new(".").readme.to_steam
+  end
+
+  desc "render README for About.xml"
+  task :xml do
+    puts Mod.new(".").readme.to_about_xml
+  end
+
+  namespace :xml do
+    desc "update About.xml"
+    task :write do
+      rendered = Mod.new(".").readme.to_about_xml
+      d0 = File.read("About/About.xml")
+      d1 = d0.sub(%r|<description><!\[CDATA\[.+\]\]></description>|m, "<description><![CDATA[#{rendered}]]></description>")
+      if d0 != d1
+        File.write "About/About.xml", d1
+      end
+    end
   end
 
   namespace :steam do

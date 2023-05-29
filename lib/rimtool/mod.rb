@@ -11,10 +11,10 @@ module RimTool
     def initialize(path, xml = nil)
       @path = path
       @xml = xml || Nokogiri::XML(open(File.join(path, "About", "About.xml")))
-      @name = (@xml/:ModMetaData/:name).first&.text
-      @author = (@xml/:ModMetaData/:author).first&.text
-      @url = (@xml/:ModMetaData/:url).first&.text
-      @package_id = (@xml/:ModMetaData/:packageId).first&.text
+      @name = @xml.xpath("//ModMetaData/name").text
+      @author = @xml.xpath("//ModMetaData/author").text
+      @url = @xml.xpath("//ModMetaData/url").text
+      @package_id = @xml.xpath("//ModMetaData/packageId").text
       pub_fname = File.join(path, "About", "PublishedFileId.txt")
       if File.exist?(pub_fname)
         @id = File.read(pub_fname).strip.to_i
@@ -26,7 +26,6 @@ module RimTool
     end
 
     def github_url
-      url = (@xml/:ModMetaData/:url).first&.text
       return url if url.start_with?("https://github.com/")
       nil
     end
@@ -194,7 +193,8 @@ module RimTool
         else
           puts "[?] #{found.size} mods found:"
           found.each do |path, xml|
-            puts "  #{path}"
+            modname = (xml/:ModMetaData/:name).first&.text&.downcase
+            printf "  %s  %s\n", path, modname
           end
         end
       end
