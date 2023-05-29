@@ -27,6 +27,15 @@ module RimTool
             end
           end
       end
+
+      def to_about_xml
+        Redcarpet::Markdown
+          .new(RimTool::AboutXMLRenderer)
+          .render(File.read("README.md"))
+          .sub("<color=#1a8bff><b>You may also like...</b></color>", "")
+          .strip
+          .gsub(/\n{3,}/, "\n\n")
+      end
     end
   end
 end
