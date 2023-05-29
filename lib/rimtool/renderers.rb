@@ -76,4 +76,33 @@ module RimTool
       text + "\n\n"
     end
   end
+
+  # About.xml
+  class AboutXMLRenderer < Redcarpet::Render::StripDown
+    def header(text, header_level)
+      "\n<color=#1a8bff><b>#{text}</b></color>\n"
+    end
+
+    def link(link, title, content)
+      return link if link.start_with?("https://ko-fi.com/") || link.start_with?("https://www.patreon.com/")
+      
+      if content.nil? || content.empty?
+        if title.nil? || title.empty?
+          ""
+        else
+          %Q|<a href="#{link}">#{title}</a>|
+        end
+      else
+        %Q|<a href="#{link}">#{content}</a>|
+      end
+    end
+
+    def list_item(text, list_type)
+      "  • #{text}"
+    end
+
+    def image *args
+      ""
+    end
+  end
 end
