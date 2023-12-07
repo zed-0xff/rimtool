@@ -4,12 +4,10 @@ require_relative "../rimtool"
 require 'awesome_print'
 require 'fileutils'
 
-include RimTool
-
 desc "list files that will be uploaded, respecting .rimignore files, if any"
 task :ls do
   totalsize = 0
-  Mod.new(".").each_file do |fname|
+  RimTool::Mod.new(".").each_file do |fname|
     fsize = File.size(fname)
     printf "[.] %5d KB  %s\n", fsize/1024, fname
     totalsize += fsize
@@ -20,12 +18,12 @@ end
 task :mod => :build
 
 task default: [:build]
-task release: [:prune, :build, :test, :clean, :ls, :check]
+task release: ["readme:xml:write", "readme:fix_links", :prune, :build, :test, :clean, :ls, :check]
 
 desc "check for any pesky stuff"
 task :check do
   # 'rake fix' will need mod.url, so running it before others
-  mod = Mod.new(".")
+  mod = RimTool::Mod.new(".")
   unless mod.url
     puts "[!] no mod url in About/About.xml".red
     exit 1
@@ -74,10 +72,7 @@ task :check do
     end
   end
 
-  if File.exist?("README.md") && File.read("README.md")["FIXME"]
-    puts "[!] FIXMEs in README.md".red
-    exit 1
-  end
+  system "rg FIXME"
 end
 
 desc "autofix found issues"
@@ -128,8 +123,14 @@ end
 namespace :preview do
   desc "push preview image to steam"
   task :push do
-    mod = Mod.new(".")
-    YADA.update_item_preview!(mod)
+    mod = RimTool::Mod.new(".")
+    RimTool::YADA.update_item_preview!(mod)
+  end
+
+  desc "add additional preview img"
+  task :add, :fname do |_, args|
+    mod = RimTool::Mod.new(".")
+    RimTool::YADA.add_item_preview!(mod, args.fname)
   end
 end
 
@@ -143,20 +144,25 @@ namespace :readme do
 
   desc "render README for steam"
   task :steam do
-    puts Mod.new(".").readme.to_steam
+    puts RimTool::Mod.new(".").readme.to_steam
   end
 
   desc "render README for About.xml"
   task :xml do
-    puts Mod.new(".").readme.to_about_xml
+    puts RimTool::Mod.new(".").readme.to_about_xml
   end
 
   namespace :xml do
     desc "update About.xml"
     task :write do
-      rendered = Mod.new(".").readme.to_about_xml
+      rendered = RimTool::Mod.new(".").readme.to_about_xml
       d0 = File.read("About/About.xml")
-      d1 = d0.sub(%r|<description><!\[CDATA\[.+\]\]></description>|m, "<description><![CDATA[#{rendered}]]></description>")
+      d1 =
+        if d0['CDATA']
+          d0.sub(%r|<description><!\[CDATA\[.+\]\]></description>|m, "<description><![CDATA[#{rendered}]]></description>")
+        else
+          d0.sub(%r|<description>.+</description>|m, "<description><![CDATA[#{rendered}]]></description>")
+        end
       if d0 != d1
         File.write "About/About.xml", d1
       end
@@ -166,8 +172,8 @@ namespace :readme do
   namespace :steam do
     desc "push README to steam"
     task :push do
-      mod = Mod.new(".")
-      YADA.update_item_description!(mod)
+      mod = RimTool::Mod.new(".")
+      RimTool::YADA.update_item_description!(mod)
     end
   end
 
@@ -177,7 +183,7 @@ namespace :readme do
     d1 = d0.dup
     d0.scan(%r_^\[!\[(.+?)\]\((https://steamuserimages.+?)\)\]\(https://steamcommunity\.com/sharedfiles/filedetails/\?id=(\d+)?\)$_)
       .each do |mod_name, mod_img_url, mod_id|
-        mod = Mod.find(mod_id)
+        mod = RimTool::Mod.find(mod_id)
         if mod.steam_img_url != mod_img_url
           puts "[*] updated #{mod_name.inspect} link"
           d1.gsub!(mod_img_url, mod.steam_img_url)
@@ -190,7 +196,7 @@ namespace :readme do
 
   desc 'add "You may also like..." section to README.md'
   task :promote do
-    mod = Mod.new(".")
+    mod = RimTool::Mod.new(".")
     data = File.read "README.md"
     raise "already promoting" if data["# You may also like"]
 

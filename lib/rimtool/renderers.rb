@@ -69,7 +69,10 @@ module RimTool
     end
 
     def codespan(code)
-      "[b]#{code}[/b]"
+      "[code]#{code.strip.
+        gsub(MARKER_BOLD, '**').
+        gsub(MARKER_ITALIC, '*')
+      }[/code]\n"
     end
 
     def paragraph(text)

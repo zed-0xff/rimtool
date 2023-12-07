@@ -8,15 +8,30 @@ module RimTool
     PORT = CONFIG['yada_port'] || 8192
 
     class << self
-      def message text
+      def request klass, **params
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Request_Message") {
-            xml.Text text
+          xml.root("Class" => "YADA.API.#{klass}") {
+            params.each do |k,v|
+              case v
+              when Array
+                xml.send(k) do
+                  v.each do |av|
+                    xml.send("li", av)
+                  end
+                end
+              else
+                xml.send(k, v)
+              end
+            end
           }
         end
         xml = builder.to_xml
         resp = Net::HTTP.post(URI("http://127.0.0.1:#{PORT}/"), xml)
-        Nori.new.parse(resp.body)["Response"]
+        resp.body
+      end
+
+      def message text
+        request "Message", Text: text
       end
 
       # query steam details if one or more mods
@@ -25,7 +40,7 @@ module RimTool
         raise "no ids given" if ids.empty?
 
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Request_QueryUGCDetailsRequest") {
+          xml.root("Class" => "YADA.API.Steam.QueryUGCDetailsRequest") {
             xml.ReturnAdditionalPreviews true
             xml.ReturnChildren true
             xml.ReturnKeyValueTags true
@@ -47,44 +62,38 @@ module RimTool
 
       # update mod description on steam
       def update_item_description! mod
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Request_SetItemDescription") {
-            xml.PublishedFileId mod.id
-            xml.Description mod.readme.to_steam
-          }
-        end
-        xml = builder.to_xml
-        resp = Net::HTTP.post(URI("http://127.0.0.1:#{PORT}/"), xml)
-        puts resp.body
+        request "SetItemDescription",
+          PublishedFileId: mod.id,
+          Description: mod.readme.to_steam
       end
 
       # update mod preview image on steam
       def update_item_preview! mod
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Request_SetItemPreview") {
-            xml.PublishedFileId mod.id
-            xml.PreviewFile File.expand_path(File.join(mod.path, "About", "Preview.png"))
-          }
-        end
-        xml = builder.to_xml
-        resp = Net::HTTP.post(URI("http://127.0.0.1:#{PORT}/"), xml)
-        puts resp.body
+        request "SetItemPreview",
+          PublishedFileId: mod.id,
+          PreviewFile: File.expand_path(File.join(mod.path, "About", "Preview.png"))
+      end
+
+      # add additional preview image on steam
+      def add_item_preview! mod, fname
+        request "AddItemPreviewFile",
+          PublishedFileId: mod.id,
+          PreviewFile: File.expand_path(fname)
       end
 
       # list Harmony patches
-      def patches
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Harmony.Request_GetAllPatchedMethods")
-        end
-        xml = builder.to_xml
-        resp = Net::HTTP.post(URI("http://127.0.0.1:#{PORT}/"), xml)
-        resp.body
+      def patches original: false
+        request "Harmony.GetAllPatchedMethods", returnCached: original
       end
 
-      def repatch! hash
+      def repatch! *hashes
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Harmony.Request_Repatch") {
-            xml.Hash hash
+          xml.root("Class" => "YADA.API.Harmony.Repatch") {
+            xml.Hashes {
+              hashes.each do |hash|
+                xml.li hash
+              end
+            }
           }
         end
         xml = builder.to_xml
@@ -92,10 +101,14 @@ module RimTool
         resp.body
       end
 
-      def unpatch! hash
+      def unpatch! *hashes
         builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Harmony.Request_Unpatch") {
-            xml.Hash hash
+          xml.root("Class" => "YADA.API.Harmony.Unpatch") {
+            xml.Hashes {
+              hashes.each do |hash|
+                xml.li hash
+              end
+            }
           }
         end
         xml = builder.to_xml
@@ -103,19 +116,27 @@ module RimTool
         resp.body
       end
 
-      def unpatch_all! owner, req = "Unpatch"
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.root("Class" => "YADA.API.Harmony.Request_#{req}All") {
-            xml.Owner owner
-          }
-        end
-        xml = builder.to_xml
-        resp = Net::HTTP.post(URI("http://127.0.0.1:#{PORT}/"), xml)
-        resp.body
+      def unpatch_all! owner
+        request "Harmony.UnpatchAll", Owner: owner
       end
 
       def repatch_all! owner
-        unpatch_all! owner, "Repatch"
+        request "Harmony.RepatchAll", Owner: owner
+      end
+
+      # fqmn = fully qualified method name :) like "RimWorld.Need::get_MaxLevel"
+      def disasm fqmn, original: false
+        request "Disasm", fqmn: fqmn, original: original
+      end
+
+      def eval expression
+        request "Eval", expression: expression
+      end
+    end # class << self
+
+    class Defs
+      def self.Get defType, defName
+        YADA.request "Defs.Get", defType: defType, defName: defName
       end
     end
   end

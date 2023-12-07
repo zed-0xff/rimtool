@@ -61,8 +61,8 @@ module RimTool
     end
 
     def steam_img_url
-      if steam_details
-        return steam_details['preview_url'] + "?imw=268&imh=151&ima=fit&impolicy=Letterbox"
+      if (preview_url = steam_details&.dig('preview_url'))
+        return preview_url + "?imw=268&imh=151&ima=fit&impolicy=Letterbox"
       end
 
       doc = Nokogiri::HTML(URI.open(steam_url))
@@ -75,11 +75,17 @@ module RimTool
     end
 
     def steam_img_link
-      "[![%s](%s)](%s)" % [name, steam_img_url, steam_url]
+      return nil unless (img_url = steam_img_url)
+
+      "[![%s](%s)](%s)" % [name, img_url, steam_url]
+    end
+
+    def markdown_link
+      "[%s](%s)" % [name, steam_url]
     end
 
     def steam_link
-      "[%s](%s)" % [name, steam_url]
+      "[url=%s]%s[/url]" % [steam_url, name]
     end
 
     # iterate over mod files, respecting .rimignore, if any
