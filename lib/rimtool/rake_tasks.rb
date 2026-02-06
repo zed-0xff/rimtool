@@ -15,10 +15,29 @@ task :ls do
   printf "[=] %5d KB\n", totalsize/1024
 end
 
-task :mod => :build
+task :mod => "build:1.6"
 
-task default: [:build]
-task release: ["readme:xml:write", "readme:fix_links", :prune, :build, :test, :clean, :ls, :check]
+namespace :build do
+  desc "build Release for RimWorld 1.4"
+  task :"1.4" do
+    Dir.chdir("Source") { system "dotnet build -c Release -p:RimWorldVersion=1.4", exception: true } if Dir.exist?("Source")
+  end
+
+  desc "build Release for RimWorld 1.5"
+  task :"1.5" do
+    Dir.chdir("Source") { system "dotnet build -c Release -p:RimWorldVersion=1.5", exception: true } if Dir.exist?("Source")
+  end
+
+  desc "build Release for RimWorld 1.6 (default)"
+  task :"1.6" do
+    Dir.chdir("Source") { system "dotnet build -c Release", exception: true } if Dir.exist?("Source")
+  end
+end
+
+task build: "build:1.6"
+
+task default: ["build:1.6"]
+task release: ["readme:xml:write", "readme:fix_links", :prune, "build:1.6", :test, :clean, :ls, :check]
 
 desc "check for any pesky stuff"
 task :check do
@@ -83,14 +102,6 @@ task :fix do
   RimTool.add_template_file("README.md")
 end
 
-desc "build Release"
-task :build do
-  if Dir.exists?("Source")
-    Dir.chdir "Source"
-    system "dotnet build -c Release", exception: true
-    Dir.chdir ".."
-  end
-end
 
 desc "build Debug"
 task :debug do
