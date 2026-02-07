@@ -223,5 +223,5 @@ end
 desc "symlink current mod into game's mods dir"
 task :symlink do
   target = File.expand_path("~/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/#{File.basename(File.expand_path("."))}")
-  FileUtils.ln_s(File.expand_path("."), target)
+  FileUtils.ln_s(File.expand_path("."), target) unless File.exist?(target)
 end
