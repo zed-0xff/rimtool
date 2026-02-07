@@ -32,6 +32,8 @@ namespace :build do
   task :"1.6" do
     Dir.chdir("Source") { system "dotnet build -c Release", exception: true } if Dir.exist?("Source")
   end
+
+  task :all => ["build:1.4", "build:1.5", "build:1.6"]
 end
 
 task build: "build:1.6"
