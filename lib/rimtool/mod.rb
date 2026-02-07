@@ -97,8 +97,8 @@ module RimTool
 
       globs = ignores.find_all{ |i| i[/[?*]/] }
       Dir.foreach(dir).to_a
-        .delete_if{ |fn| ignores.include?(fn) }
-        .delete_if{ |fn| globs.any?{ |g| File.fnmatch(g, fn, File::FNM_DOTMATCH) } }
+        .delete_if{ |fn| ignores.any?{ |i| i.casecmp(fn) == 0 } }
+        .delete_if{ |fn| globs.any?{ |g| File.fnmatch(g, fn, File::FNM_DOTMATCH | File::FNM_CASEFOLD) } }
         .each do |fn|
           pathname = File.join(dir, fn)
           if File.directory?(pathname)
